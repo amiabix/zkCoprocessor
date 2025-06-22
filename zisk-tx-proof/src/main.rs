@@ -43,13 +43,101 @@ fn main() {
 
 /// Read transaction data from ZisK input
 fn read_transaction_data() -> TransactionData {
-    // Read structured input from ZisK
-    let transfer_id: u128 = read_input();
-    let block_number: u64 = read_input();
-    let tx_index: u64 = read_input();
-    let from_account: u128 = read_input();
-    let to_account: u128 = read_input();
-    let amount: u128 = read_input();
+    // Try to read from environment variables first (for testing/integration)
+    if let (Ok(transfer_id_str), Ok(block_number_str), Ok(tx_index_str), 
+            Ok(from_account_str), Ok(to_account_str), Ok(amount_str)) = (
+        std::env::var("ZISK_INPUT_TRANSFER_ID"),
+        std::env::var("ZISK_INPUT_BLOCK_NUMBER"), 
+        std::env::var("ZISK_INPUT_TX_INDEX"),
+        std::env::var("ZISK_INPUT_FROM_ACCOUNT"),
+        std::env::var("ZISK_INPUT_TO_ACCOUNT"),
+        std::env::var("ZISK_INPUT_AMOUNT")
+    ) {
+        println!("🔍 ZisK: Reading from environment variables");
+        
+        let transfer_id = transfer_id_str.parse::<u128>()
+            .expect("Invalid transfer_id in environment");
+        let block_number = block_number_str.parse::<u64>()
+            .expect("Invalid block_number in environment");
+        let tx_index = tx_index_str.parse::<u64>()
+            .expect("Invalid tx_index in environment");
+        let from_account = from_account_str.parse::<u128>()
+            .expect("Invalid from_account in environment");
+        let to_account = to_account_str.parse::<u128>()
+            .expect("Invalid to_account in environment");
+        let amount = amount_str.parse::<u128>()
+            .expect("Invalid amount in environment");
+        
+        return TransactionData {
+            transfer_id,
+            block_number,
+            tx_index,
+            from_account,
+            to_account,
+            amount,
+        };
+    }
+    
+    // Fallback to ZisK input system
+    println!("🔍 ZisK: Reading from ZisK input system");
+    
+    // Read raw bytes and convert to proper types
+    let transfer_id_bytes = read_input();
+    let block_number_bytes = read_input();
+    let tx_index_bytes = read_input();
+    let from_account_bytes = read_input();
+    let to_account_bytes = read_input();
+    let amount_bytes = read_input();
+    
+    // Convert bytes to proper types with padding for smaller inputs
+    let transfer_id = if transfer_id_bytes.len() == 16 {
+        u128::from_le_bytes(transfer_id_bytes.try_into().expect("Invalid transfer_id length"))
+    } else {
+        // Pad with zeros if input is smaller
+        let mut padded = [0u8; 16];
+        padded[..transfer_id_bytes.len().min(16)].copy_from_slice(&transfer_id_bytes[..transfer_id_bytes.len().min(16)]);
+        u128::from_le_bytes(padded)
+    };
+    
+    let block_number = if block_number_bytes.len() == 8 {
+        u64::from_le_bytes(block_number_bytes.try_into().expect("Invalid block_number length"))
+    } else {
+        let mut padded = [0u8; 8];
+        padded[..block_number_bytes.len().min(8)].copy_from_slice(&block_number_bytes[..block_number_bytes.len().min(8)]);
+        u64::from_le_bytes(padded)
+    };
+    
+    let tx_index = if tx_index_bytes.len() == 8 {
+        u64::from_le_bytes(tx_index_bytes.try_into().expect("Invalid tx_index length"))
+    } else {
+        let mut padded = [0u8; 8];
+        padded[..tx_index_bytes.len().min(8)].copy_from_slice(&tx_index_bytes[..tx_index_bytes.len().min(8)]);
+        u64::from_le_bytes(padded)
+    };
+    
+    let from_account = if from_account_bytes.len() == 16 {
+        u128::from_le_bytes(from_account_bytes.try_into().expect("Invalid from_account length"))
+    } else {
+        let mut padded = [0u8; 16];
+        padded[..from_account_bytes.len().min(16)].copy_from_slice(&from_account_bytes[..from_account_bytes.len().min(16)]);
+        u128::from_le_bytes(padded)
+    };
+    
+    let to_account = if to_account_bytes.len() == 16 {
+        u128::from_le_bytes(to_account_bytes.try_into().expect("Invalid to_account length"))
+    } else {
+        let mut padded = [0u8; 16];
+        padded[..to_account_bytes.len().min(16)].copy_from_slice(&to_account_bytes[..to_account_bytes.len().min(16)]);
+        u128::from_le_bytes(padded)
+    };
+    
+    let amount = if amount_bytes.len() == 16 {
+        u128::from_le_bytes(amount_bytes.try_into().expect("Invalid amount length"))
+    } else {
+        let mut padded = [0u8; 16];
+        padded[..amount_bytes.len().min(16)].copy_from_slice(&amount_bytes[..amount_bytes.len().min(16)]);
+        u128::from_le_bytes(padded)
+    };
     
     TransactionData {
         transfer_id,
@@ -138,9 +226,35 @@ fn compute_inclusion_proof(tx_data: &TransactionData) -> [u8; 32] {
 
 /// Write transaction proof to ZisK output
 fn write_transaction_proof(proof: &TransactionProof) {
-    // Set public outputs using ZisK API
-    set_output(&proof.transfer_id);
-    set_output(&proof.block_number);
-    set_output(&proof.inclusion_proof_hash);
-    set_output(&proof.is_valid);
+    // Set public outputs using ZisK API (id: usize, value: u32)
+    // We'll output the proof components as a series of u32 values
+    
+    // Output transfer_id as 4 u32 values (128 bits / 32 bits = 4)
+    let transfer_id_bytes = proof.transfer_id.to_le_bytes();
+    for (i, chunk) in transfer_id_bytes.chunks(4).enumerate() {
+        let mut bytes = [0u8; 4];
+        bytes[..chunk.len()].copy_from_slice(chunk);
+        let value = u32::from_le_bytes(bytes);
+        set_output(i, value);
+    }
+    
+    // Output block_number as 2 u32 values (64 bits / 32 bits = 2)
+    let block_number_bytes = proof.block_number.to_le_bytes();
+    for (i, chunk) in block_number_bytes.chunks(4).enumerate() {
+        let mut bytes = [0u8; 4];
+        bytes[..chunk.len()].copy_from_slice(chunk);
+        let value = u32::from_le_bytes(bytes);
+        set_output(4 + i, value);
+    }
+    
+    // Output first 8 bytes of inclusion_proof_hash as 2 u32 values
+    for (i, chunk) in proof.inclusion_proof_hash[0..8].chunks(4).enumerate() {
+        let mut bytes = [0u8; 4];
+        bytes[..chunk.len()].copy_from_slice(chunk);
+        let value = u32::from_le_bytes(bytes);
+        set_output(6 + i, value);
+    }
+    
+    // Output validity as u32 (0 = false, 1 = true)
+    set_output(8, if proof.is_valid { 1 } else { 0 });
 }

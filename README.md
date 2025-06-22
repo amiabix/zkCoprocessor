@@ -8,7 +8,6 @@ A simple Rust demo that syncs Ethereum blockchain data to TigerBeetle. This proj
 - Stores transactions with value > 0 as TigerBeetle transfers
 - Provides basic CLI commands for testing and debugging
 - Includes simple performance benchmarks
-- **NEW**: ZK proof generation for transaction inclusion
 
 ## Prerequisites
 
