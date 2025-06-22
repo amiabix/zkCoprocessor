@@ -1,15 +1,14 @@
 # zkCoprocessor
 
-A high-performance Rust application that synchronizes Ethereum blockchain data to TigerBeetle, enabling fast transaction lookups and financial data processing for zero-knowledge applications.
+A Rust prototype that demonstrates synchronizing Ethereum blockchain data to TigerBeetle for high-performance transaction lookups. This project showcases the integration between Ethereum and TigerBeetle for potential zero-knowledge applications.
 
-## 🚀 Features
+## 🚀 What It Does
 
 - **Ethereum Integration**: Fetches real Ethereum blocks and transactions via RPC
 - **TigerBeetle Sync**: Stores Ethereum transactions as TigerBeetle transfers for fast lookups
-- **Performance Benchmarking**: Compare TigerBeetle vs Ethereum RPC performance
-- **CLI Interface**: Easy-to-use command-line interface for all operations
-- **Debug Tools**: Inspect stored data and troubleshoot sync issues
-- **Real-time Processing**: Handles live Ethereum data with proper error handling
+- **Performance Comparison**: Benchmarks TigerBeetle vs Ethereum RPC performance
+- **CLI Interface**: Command-line tools for testing and debugging
+- **Real Data Processing**: Handles actual Ethereum blockchain data
 
 ## 🏗️ Architecture
 
@@ -19,7 +18,7 @@ Ethereum Blockchain → zkCoprocessor → TigerBeetle Database
 ```
 
 - **Input**: Ethereum blocks via JSON-RPC
-- **Processing**: Transaction filtering and data transformation
+- **Processing**: Filters transactions with value > 0, transforms to TigerBeetle format
 - **Output**: TigerBeetle transfers and accounts for high-performance queries
 
 ## 📋 Prerequisites
@@ -28,20 +27,16 @@ Ethereum Blockchain → zkCoprocessor → TigerBeetle Database
 - **TigerBeetle** server running locally
 - **Ethereum RPC endpoint** (public or private)
 
-## 🛠️ Installation
+## 🛠️ Quick Start
 
-1. **Clone the repository**:
+1. **Clone and build**:
    ```bash
    git clone https://github.com/amiabix/zkCoprocessor.git
    cd zkCoprocessor
-   ```
-
-2. **Build the project**:
-   ```bash
    cargo build --release
    ```
 
-3. **Set up TigerBeetle** (if not already running):
+2. **Set up TigerBeetle**:
    ```bash
    # Format TigerBeetle database
    tigerbeetle format --cluster=0 --replica=0 --replica-count=1 0_0.tigerbeetle
@@ -50,62 +45,55 @@ Ethereum Blockchain → zkCoprocessor → TigerBeetle Database
    tigerbeetle start --addresses=3000 0_0.tigerbeetle
    ```
 
-## 🎯 Usage
+3. **Test the setup**:
+   ```bash
+   # Test connections
+   cargo run -- test-tiger
+   cargo run -- test-eth
+   
+   # Sync some blocks
+   cargo run -- sync-blocks --from 19000000 --to 19000000
+   
+   # Check what was stored
+   cargo run -- debug --limit 5
+   ```
 
-### Basic Commands
+## 🎯 Available Commands
 
+### Connection Testing
 ```bash
 # Test TigerBeetle connection
 cargo run -- test-tiger
 
 # Test Ethereum RPC connection
-cargo run -- test-eth
-
-# Sync Ethereum blocks to TigerBeetle
-cargo run -- sync-blocks --from 19000000 --to 19000001
-
-# Run performance benchmarks
-cargo run -- benchmark --num-transactions 50
-
-# Debug stored transfers
-cargo run -- debug --limit 10
-
-# Query specific data
-cargo run -- query --account-id 123456789
-cargo run -- query --transfer-id 19000000000000
+cargo run -- test-eth [--rpc-url <URL>]
 ```
 
-### Command Reference
+### Data Synchronization
+```bash
+# Sync Ethereum blocks to TigerBeetle
+cargo run -- sync-blocks --from <BLOCK> --to <BLOCK> [--rpc-url <URL>]
+```
 
-#### `test-tiger`
-Tests connection to TigerBeetle server at `127.0.0.1:3000`
+### Performance Testing
+```bash
+# Run benchmarks
+cargo run -- benchmark [--num-transactions <N>] [--include-ethereum]
+```
 
-#### `test-eth [--rpc-url <URL>]`
-Tests connection to Ethereum RPC endpoint
-- Default RPC URL: `https://eth.llamarpc.com`
+### Debug & Inspection
+```bash
+# View stored data
+cargo run -- debug [--limit <N>]
 
-#### `sync-blocks --from <BLOCK> --to <BLOCK> [--rpc-url <URL>]`
-Synchronizes Ethereum blocks to TigerBeetle
-- Only processes transactions with value > 0
-- Creates accounts for sender and receiver addresses
-- Stores transfers with block number in user_data_128
+# Query specific items
+cargo run -- query --account-id <ID>
+cargo run -- query --transfer-id <ID>
+```
 
-#### `benchmark [--num-transactions <N>] [--include-ethereum] [--rpc-url <URL>]`
-Runs performance benchmarks comparing TigerBeetle vs Ethereum RPC
-- Default: 50 transactions
-- Use `--include-ethereum` to also test against Ethereum RPC (slower)
+## 📊 Performance Results
 
-#### `debug [--limit <N>]`
-Inspects stored transfers and accounts in TigerBeetle
-- Shows transfer details: amount, accounts, block number
-- Default limit: 10 items
-
-#### `query [--account-id <ID>] [--transfer-id <ID>]`
-Queries specific accounts or transfers by ID
-
-## 📊 Performance
-
-### Benchmark Results Example
+Example benchmark output:
 ```
 🏁 zkCoprocessor Comprehensive Performance Benchmark
 ===================================================
@@ -126,15 +114,6 @@ Testing: 50 transactions
 ✅ Purpose-built for transaction processing
 ✅ No network latency or rate limiting
 ```
-
-## 🔧 Configuration
-
-### Environment Variables
-- `TIGERBEETLE_ADDRESS`: TigerBeetle server address (default: `127.0.0.1:3000`)
-- `ETH_RPC_URL`: Ethereum RPC endpoint (default: `https://eth.llamarpc.com`)
-
-### TigerBeetle Setup
-The application expects TigerBeetle to be running on port 3000. You can modify the connection in `src/main.rs` if needed.
 
 ## 🏗️ Project Structure
 
@@ -162,6 +141,16 @@ zkcoprocessor/
 - Individual vs batch operation testing
 - Real transfer ID discovery
 - Comparison between TigerBeetle and Ethereum RPC
+
+## 🔧 Configuration
+
+### Default Settings
+- **TigerBeetle**: `127.0.0.1:3000`
+- **Ethereum RPC**: `https://eth.llamarpc.com`
+
+### Environment Variables
+- `TIGERBEETLE_ADDRESS`: TigerBeetle server address
+- `ETH_RPC_URL`: Ethereum RPC endpoint
 
 ## 🚨 Troubleshooting
 
@@ -216,13 +205,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Ethers.rs](https://github.com/gakonst/ethers-rs) - Ethereum library for Rust
 - [Clap](https://github.com/clap-rs/clap) - Command line argument parsing
 
-## 📞 Support
-
-For issues and questions:
-- Create an issue on GitHub
-- Check the troubleshooting section above
-- Review the debug output for error details
-
 ---
 
-**zkCoprocessor** - Bridging Ethereum and TigerBeetle for zero-knowledge applications 🚀 
+**zkCoprocessor** - A prototype bridging Ethereum and TigerBeetle 🚀 
