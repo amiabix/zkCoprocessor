@@ -6,6 +6,7 @@ use std::path::Path;
 use tigerbeetle_unofficial::Client;
 use tracing::{info, warn};
 use hex;
+use std::io::Write;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionData {
@@ -53,7 +54,7 @@ pub async fn generate_zk_proof(
         }
     } else {
         if !is_platform_supported() {
-            info!("ℹ️  ZisK not supported on macOS yet, using simulation mode");
+            info!("ℹ️  ZisK doesn't support {} yet", std::env::consts::OS);
         } else {
             info!("ℹ️  ZisK not available, using simulation mode");
         }
@@ -132,16 +133,29 @@ async fn run_zisk_program(transfer_data: &TransactionData) -> Result<String> {
     let current_dir = std::env::current_dir()?;
     let zisk_dir = current_dir.join("zisk-tx-proof");
     
-    // Run the ZisK program using rustup
-    let output = Command::new("rustup")
-        .args(&["run", "zisk", "cargo", "run"])
+    // Create input.bin file with transaction data
+    let input_file = zisk_dir.join("build").join("input.bin");
+    
+    // Ensure build directory exists
+    if let Some(parent) = input_file.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    
+    // Write transaction data to input.bin in little-endian format
+    let mut file = fs::File::create(&input_file)?;
+    file.write_all(&transfer_data.transfer_id.to_le_bytes())?;
+    file.write_all(&transfer_data.block_number.to_le_bytes())?;
+    file.write_all(&(transfer_data.tx_index as u64).to_le_bytes())?;
+    file.write_all(&transfer_data.from_account.to_le_bytes())?;
+    file.write_all(&transfer_data.to_account.to_le_bytes())?;
+    file.write_all(&transfer_data.amount.to_le_bytes())?;
+    
+    info!("📝 Created input.bin with transaction data");
+    
+    // Run the ZisK program using cargo
+    let output = Command::new("cargo")
+        .args(&["run"])
         .current_dir(&zisk_dir)
-        .env("ZISK_INPUT_TRANSFER_ID", transfer_data.transfer_id.to_string())
-        .env("ZISK_INPUT_BLOCK_NUMBER", transfer_data.block_number.to_string())
-        .env("ZISK_INPUT_TX_INDEX", transfer_data.tx_index.to_string())
-        .env("ZISK_INPUT_FROM_ACCOUNT", transfer_data.from_account.to_string())
-        .env("ZISK_INPUT_TO_ACCOUNT", transfer_data.to_account.to_string())
-        .env("ZISK_INPUT_AMOUNT", transfer_data.amount.to_string())
         .output()?;
     
     if !output.status.success() {
@@ -154,6 +168,9 @@ async fn run_zisk_program(transfer_data: &TransactionData) -> Result<String> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     info!("✅ ZisK program completed successfully");
     info!("ZisK output: {}", stdout);
+    
+    // Clean up input file
+    cleanup_temp_files(&input_file.to_string_lossy())?;
     
     Ok(stdout.to_string())
 }
