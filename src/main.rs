@@ -6,9 +6,10 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use ethers::{
     providers::{Http, Provider, Middleware},
-    types::{BlockNumber, Transaction},
+    types::BlockNumber,
 };
 
+mod zk;
 mod benchmark;
 use benchmark::TransactionLookupBenchmark;
 
@@ -63,6 +64,20 @@ pub enum Commands {
         account_id: Option<u128>,
         #[arg(long)]
         transfer_id: Option<u128>,
+    },
+    
+    /// Generate ZK proof for transaction inclusion
+    ProveTransaction {
+        /// Transfer ID to prove
+        #[arg(long)]
+        transfer_id: u128,
+    },
+    
+    /// Batch generate ZK proofs
+    ProveBatch {
+        /// Number of transactions to prove
+        #[arg(long, default_value = "5")]
+        count: usize,
     },
 }
 
@@ -623,6 +638,84 @@ async fn debug_transfers(limit: usize) -> Result<()> {
     Ok(())
 }
 
+/// Generate ZK proof for a specific transaction
+async fn cmd_prove_transaction(transfer_id: u128) -> Result<()> {
+    info!("🎯 Generating ZK proof for transfer_id: {}", transfer_id);
+    
+    let mut tb_client = TigerBeetleClient::new()?;
+    let proof = zk::generate_zk_proof(&mut tb_client.client, transfer_id).await?;
+    
+    // Display results
+    println!("\n🔐 ZK Proof Results:");
+    println!("=====================================");
+    println!("Transfer ID: {}", proof.transfer_id);
+    println!("Block Number: {}", proof.block_number);
+    println!("Proof Hash: {}", hex::encode(proof.inclusion_proof_hash));
+    println!("Valid: {}", if proof.is_valid { "✅ YES" } else { "❌ NO" });
+    
+    if proof.is_valid {
+        println!("\n🎉 Transaction inclusion successfully proven!");
+    }
+    
+    Ok(())
+}
+
+/// Generate proofs for multiple transactions
+async fn cmd_prove_batch(count: usize) -> Result<()> {
+    info!("🎯 Generating {} ZK proofs in batch", count);
+    
+    let mut tb_client = TigerBeetleClient::new()?;
+    
+    // Use the actual transfer IDs from sync logs
+    let known_transfer_ids = vec![
+        // Block 19000000
+        19000000000000u128, 19000000000002u128, 19000000000003u128, 19000000000005u128,
+        19000000000006u128, 19000000000007u128, 19000000000008u128, 19000000000009u128,
+        19000000000012u128, 19000000000016u128, 19000000000022u128, 19000000000023u128,
+        19000000000025u128, 19000000000027u128, 19000000000028u128, 19000000000045u128,
+        19000000000046u128, 19000000000048u128, 19000000000051u128, 19000000000052u128,
+        19000000000055u128, 19000000000056u128, 19000000000058u128, 19000000000059u128,
+        19000000000061u128, 19000000000064u128, 19000000000065u128, 19000000000066u128,
+        19000000000068u128, 19000000000073u128, 19000000000074u128, 19000000000076u128,
+        19000000000077u128, 19000000000082u128, 19000000000087u128, 19000000000089u128,
+        19000000000090u128, 19000000000091u128, 19000000000094u128, 19000000000095u128,
+        19000000000096u128, 19000000000097u128, 19000000000101u128, 19000000000103u128,
+        19000000000104u128, 19000000000105u128, 19000000000106u128, 19000000000107u128,
+        19000000000108u128, 19000000000109u128, 19000000000112u128, 19000000000113u128,
+        19000000000114u128, 19000000000115u128, 19000000000116u128, 19000000000119u128,
+        19000000000122u128, 19000000000123u128, 19000000000124u128, 19000000000125u128,
+        19000000000126u128, 19000000000129u128, 19000000000130u128, 19000000000131u128,
+        19000000000132u128,
+    ];
+    
+    let transfer_ids = &known_transfer_ids[0..count.min(known_transfer_ids.len())];
+    
+    println!("\n🔐 Batch ZK Proof Generation:");
+    println!("================================");
+    
+    let mut successful_proofs = 0;
+    
+    for (i, &transfer_id) in transfer_ids.iter().enumerate() {
+        println!("\n📝 Proof {}/{}: Transfer ID {}", i + 1, transfer_ids.len(), transfer_id);
+        
+        match zk::generate_zk_proof(&mut tb_client.client, transfer_id).await {
+            Ok(proof) if proof.is_valid => {
+                successful_proofs += 1;
+                println!("  ✅ Generated valid proof");
+            }
+            Ok(_) => {
+                println!("  ❌ Invalid proof generated");
+            }
+            Err(e) => {
+                println!("  🚨 Failed: {}", e);
+            }
+        }
+    }
+    
+    println!("\n📊 Results: {}/{} successful proofs", successful_proofs, transfer_ids.len());
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
@@ -651,6 +744,12 @@ async fn main() -> Result<()> {
         },
         Commands::Query { account_id: _, transfer_id: _ } => {
             info!("Query feature coming in Step 3!");
+        },
+        Commands::ProveTransaction { transfer_id } => {
+            cmd_prove_transaction(transfer_id).await?;
+        },
+        Commands::ProveBatch { count } => {
+            cmd_prove_batch(count).await?;
         },
     }
     

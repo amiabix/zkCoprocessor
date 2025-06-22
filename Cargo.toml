@@ -19,3 +19,4 @@ tigerbeetle-unofficial = "0.12.2+0.16.45"
 # Add these for Ethereum integration:
 ethers = "2.0"
 hex = "0.4"
+sha2 = "0.10"
