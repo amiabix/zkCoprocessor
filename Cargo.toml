@@ -1,0 +1,21 @@
+[package]
+name = "zkcoprocessor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.0", features = ["derive"] }
+
+# TigerBeetle client - using the unofficial but maintained crate
+tigerbeetle-unofficial = "0.12.2+0.16.45"
+
+# Add these for Ethereum integration:
+ethers = "2.0"
+hex = "0.4"
