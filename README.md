@@ -1,66 +1,52 @@
 # zkCoprocessor
 
-A Rust prototype that demonstrates synchronizing Ethereum blockchain data to TigerBeetle for high-performance transaction lookups. This project showcases the integration between Ethereum and TigerBeetle for potential zero-knowledge applications.
+A simple Rust demo that syncs Ethereum blockchain data to TigerBeetle. This project shows how to fetch Ethereum blocks via RPC and store transactions as TigerBeetle transfers for fast lookups.
 
-## 🚀 What It Does
+## What It Does
 
-- **Ethereum Integration**: Fetches real Ethereum blocks and transactions via RPC
-- **TigerBeetle Sync**: Stores Ethereum transactions as TigerBeetle transfers for fast lookups
-- **Performance Comparison**: Benchmarks TigerBeetle vs Ethereum RPC performance
-- **CLI Interface**: Command-line tools for testing and debugging
-- **Real Data Processing**: Handles actual Ethereum blockchain data
+- Fetches Ethereum blocks and transactions via JSON-RPC
+- Stores transactions with value > 0 as TigerBeetle transfers
+- Provides basic CLI commands for testing and debugging
+- Includes simple performance benchmarks
 
-## 🏗️ Architecture
+## Prerequisites
 
-```
-Ethereum Blockchain → zkCoprocessor → TigerBeetle Database
-     (RPC)              (Rust)           (Fast Lookups)
-```
+- Rust (latest stable)
+- TigerBeetle server
+- Ethereum RPC endpoint
 
-- **Input**: Ethereum blocks via JSON-RPC
-- **Processing**: Filters transactions with value > 0, transforms to TigerBeetle format
-- **Output**: TigerBeetle transfers and accounts for high-performance queries
+## Quick Start
 
-## 📋 Prerequisites
-
-- **Rust** (latest stable version)
-- **TigerBeetle** server running locally
-- **Ethereum RPC endpoint** (public or private)
-
-## 🛠️ Quick Start
-
-1. **Clone and build**:
+1. **Build the project**:
    ```bash
-   git clone https://github.com/amiabix/zkCoprocessor.git
-   cd zkCoprocessor
    cargo build --release
    ```
 
 2. **Set up TigerBeetle**:
    ```bash
-   # Format TigerBeetle database
+   # Format database
    tigerbeetle format --cluster=0 --replica=0 --replica-count=1 0_0.tigerbeetle
    
-   # Start TigerBeetle server
+   # Start server
    tigerbeetle start --addresses=3000 0_0.tigerbeetle
    ```
 
-3. **Test the setup**:
+3. **Test it**:
    ```bash
    # Test connections
    cargo run -- test-tiger
    cargo run -- test-eth
    
-   # Sync some blocks
+   # Sync a block
    cargo run -- sync-blocks --from 19000000 --to 19000000
    
    # Check what was stored
    cargo run -- debug --limit 5
    ```
 
-## 🎯 Available Commands
+## Commands
 
-### Connection Testing
+### Connection Tests
 ```bash
 # Test TigerBeetle connection
 cargo run -- test-tiger
@@ -69,19 +55,13 @@ cargo run -- test-tiger
 cargo run -- test-eth [--rpc-url <URL>]
 ```
 
-### Data Synchronization
+### Data Sync
 ```bash
 # Sync Ethereum blocks to TigerBeetle
 cargo run -- sync-blocks --from <BLOCK> --to <BLOCK> [--rpc-url <URL>]
 ```
 
-### Performance Testing
-```bash
-# Run benchmarks
-cargo run -- benchmark [--num-transactions <N>] [--include-ethereum]
-```
-
-### Debug & Inspection
+### Debug & Query
 ```bash
 # View stored data
 cargo run -- debug [--limit <N>]
@@ -91,120 +71,38 @@ cargo run -- query --account-id <ID>
 cargo run -- query --transfer-id <ID>
 ```
 
-## 📊 Performance Results
-
-Example benchmark output:
-```
-🏁 zkCoprocessor Comprehensive Performance Benchmark
-===================================================
-Measuring: Transaction lookup performance
-Testing: 50 transactions
-
-📊 TigerBeetle Performance:
-============================
-  TigerBeetle Individual Lookups: 20 ops in 295ms (avg: 14.75ms/op, 67.6 ops/sec)
-  TigerBeetle Batch Lookup: 1 ops in 15ms (avg: 15.00ms/op, 64.9 ops/sec)
-
-💡 Why TigerBeetle Outperforms Ethereum RPC:
-==============================================
-✅ Local database vs network requests
-✅ Optimized indexing for financial operations
-✅ Batch operations support
-✅ Memory-mapped files and caching
-✅ Purpose-built for transaction processing
-✅ No network latency or rate limiting
-```
-
-## 🏗️ Project Structure
-
-```
-zkcoprocessor/
-├── Cargo.toml              # Project configuration and dependencies
-├── .gitignore              # Git ignore rules
-├── README.md               # This file
-└── src/
-    ├── main.rs             # Main application logic and CLI
-    └── benchmark.rs        # Performance benchmarking module
-```
-
-### Key Components
-
-#### `src/main.rs`
-- CLI interface using `clap`
-- TigerBeetle client integration
-- Ethereum RPC client integration
-- Block synchronization logic
-- Debug and query functionality
-
-#### `src/benchmark.rs`
-- Performance benchmarking framework
-- Individual vs batch operation testing
-- Real transfer ID discovery
-- Comparison between TigerBeetle and Ethereum RPC
-
-## 🔧 Configuration
-
-### Default Settings
-- **TigerBeetle**: `127.0.0.1:3000`
-- **Ethereum RPC**: `https://eth.llamarpc.com`
-
-### Environment Variables
-- `TIGERBEETLE_ADDRESS`: TigerBeetle server address
-- `ETH_RPC_URL`: Ethereum RPC endpoint
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **TigerBeetle Connection Failed**
-   - Ensure TigerBeetle server is running: `tigerbeetle start --addresses=3000 0_0.tigerbeetle`
-   - Check if port 3000 is available
-
-2. **Ethereum RPC Connection Failed**
-   - Verify RPC endpoint is accessible
-   - Try a different RPC provider
-   - Check network connectivity
-
-3. **No Transfers Found in Debug**
-   - Run sync operation first: `cargo run -- sync-blocks --from 19000000 --to 19000000`
-   - Check sync logs for errors
-
-4. **Large File Size Issues**
-   - TigerBeetle database files are excluded from git (see `.gitignore`)
-   - Database files are created locally when running the application
-
-### Debug Commands
-
+### Benchmarks
 ```bash
-# Check what's stored in TigerBeetle
-cargo run -- debug --limit 20
-
-# Test with a small block range
-cargo run -- sync-blocks --from 19000000 --to 19000000
-
-# Run benchmarks with fewer transactions
-cargo run -- benchmark --num-transactions 10
+# Run performance tests
+cargo run -- benchmark [--num-transactions <N>] [--include-ethereum]
 ```
 
-## 🤝 Contributing
+## How It Works
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes and test thoroughly
-4. Commit your changes: `git commit -m 'Add feature'`
-5. Push to the branch: `git push origin feature-name`
-6. Submit a pull request
+1. **Ethereum RPC**: Fetches blocks and transactions from Ethereum
+2. **Filtering**: Only processes transactions with value > 0
+3. **TigerBeetle Storage**: Creates accounts and transfers in TigerBeetle
+4. **ID Mapping**: Converts Ethereum addresses to u128 IDs for TigerBeetle
 
-## 📄 License
+## Project Structure
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+```
+src/
+├── main.rs          # Main CLI and sync logic
+└── benchmark.rs     # Performance benchmarking
+```
 
-## 🙏 Acknowledgments
+## Configuration
 
-- [TigerBeetle](https://github.com/tigerbeetle/tigerbeetle) - High-performance financial database
-- [Ethers.rs](https://github.com/gakonst/ethers-rs) - Ethereum library for Rust
-- [Clap](https://github.com/clap-rs/clap) - Command line argument parsing
+- **TigerBeetle**: `127.0.0.1:3000` (default)
+- **Ethereum RPC**: `https://eth.llamarpc.com` (default)
+
+## Troubleshooting
+
+- **No transfers found**: Run sync first, then debug
+- **Connection errors**: Check if TigerBeetle is running
+- **RPC errors**: Try a different Ethereum RPC endpoint
 
 ---
 
-**zkCoprocessor** - A prototype bridging Ethereum and TigerBeetle 🚀 
+A simple demo of Ethereum → TigerBeetle integration 🚀 
