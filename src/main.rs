@@ -651,7 +651,12 @@ async fn cmd_prove_transaction(transfer_id: u128) -> Result<()> {
     println!("Transfer ID: {}", proof.transfer_id);
     println!("Block Number: {}", proof.block_number);
     println!("Proof Hash: {}", hex::encode(proof.inclusion_proof_hash));
+    println!("Proof Type: {}", proof.proof_type);
     println!("Valid: {}", if proof.is_valid { "✅ YES" } else { "❌ NO" });
+    
+    if let Some(proof_path) = &proof.proof_path {
+        println!("Proof Path: {}", proof_path);
+    }
     
     if proof.is_valid {
         println!("\n🎉 Transaction inclusion successfully proven!");

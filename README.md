@@ -8,6 +8,7 @@ A simple Rust demo that syncs Ethereum blockchain data to TigerBeetle. This proj
 - Stores transactions with value > 0 as TigerBeetle transfers
 - Provides basic CLI commands for testing and debugging
 - Includes simple performance benchmarks
+- **NEW**: ZK proof generation for transaction inclusion
 
 ## Prerequisites
 
@@ -42,6 +43,10 @@ A simple Rust demo that syncs Ethereum blockchain data to TigerBeetle. This proj
    
    # Check what was stored
    cargo run -- debug --limit 5
+   
+   # Generate ZK proofs
+   cargo run -- prove-transaction --transfer-id 19000000000028
+   cargo run -- prove-batch --count 3
    ```
 
 ## Commands
@@ -71,11 +76,40 @@ cargo run -- query --account-id <ID>
 cargo run -- query --transfer-id <ID>
 ```
 
+### ZK Proof Generation
+```bash
+# Generate ZK proof for a single transaction
+cargo run -- prove-transaction --transfer-id <ID>
+
+# Generate ZK proofs for multiple transactions
+cargo run -- prove-batch --count <N>
+```
+
 ### Benchmarks
 ```bash
 # Run performance tests
 cargo run -- benchmark [--num-transactions <N>] [--include-ethereum]
 ```
+
+## ZK Proof System
+
+### Current Status
+- **Simulation Mode**: Currently runs in simulation mode on macOS (ZisK doesn't support macOS yet)
+- **Real ZK Ready**: Code is prepared for real ZisK integration when macOS support is available
+- **Proof Types**: Supports both simulated and real ZisK proofs
+
+### Proof Features
+- Transaction inclusion verification
+- Cryptographic proof hashing
+- Batch proof generation
+- Platform detection and fallback
+
+### Future ZisK Integration
+When ZisK adds macOS support, the system will automatically:
+1. Detect platform compatibility
+2. Use real ZisK zkVM for proof generation
+3. Generate verifiable zero-knowledge proofs
+4. Store proof files for external verification
 
 ## How It Works
 
@@ -83,13 +117,17 @@ cargo run -- benchmark [--num-transactions <N>] [--include-ethereum]
 2. **Filtering**: Only processes transactions with value > 0
 3. **TigerBeetle Storage**: Creates accounts and transfers in TigerBeetle
 4. **ID Mapping**: Converts Ethereum addresses to u128 IDs for TigerBeetle
+5. **ZK Proofs**: Generates cryptographic proofs of transaction inclusion
 
 ## Project Structure
 
 ```
 src/
 ├── main.rs          # Main CLI and sync logic
-└── benchmark.rs     # Performance benchmarking
+├── benchmark.rs     # Performance benchmarking
+└── zk/             # ZK proof system
+    ├── mod.rs      # Module exports
+    └── prover.rs   # ZK proof logic
 ```
 
 ## Configuration
@@ -102,7 +140,16 @@ src/
 - **No transfers found**: Run sync first, then debug
 - **Connection errors**: Check if TigerBeetle is running
 - **RPC errors**: Try a different Ethereum RPC endpoint
+- **ZK proof errors**: Currently uses simulation mode on macOS
+
+## Development Notes
+
+### ZisK Integration
+- ZisK is installed and ready for Linux/WSL environments
+- macOS support is planned by the ZisK team
+- Current simulation mode provides full development capability
+- Real ZK proofs will work automatically when platform support is added
 
 ---
 
-A simple demo of Ethereum → TigerBeetle integration 🚀 
+A simple demo of Ethereum → TigerBeetle integration with ZK proofs 🚀 

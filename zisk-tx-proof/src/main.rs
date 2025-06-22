@@ -1,10 +1,8 @@
 //! ZisK Transaction Proof Program
 //! Proves that a transaction was included in a block with specific properties
 
-use std::io;
-
-// ZisK SDK imports for input/output
-use zisk_sdk::{stdin, stdout};
+// ZisK OS imports for input/output
+use ziskos::{read_input, set_output};
 
 #[derive(Debug)]
 struct TransactionData {
@@ -27,7 +25,7 @@ struct TransactionProof {
 fn main() {
     println!("🔍 ZisK: Starting transaction proof generation...");
     
-    // Read transaction data from stdin
+    // Read transaction data from ZisK input
     let tx_data = read_transaction_data();
     
     println!("📊 ZisK: Processing transfer_id: {}", tx_data.transfer_id);
@@ -37,29 +35,29 @@ fn main() {
     // Generate proof of transaction inclusion
     let proof = prove_transaction_inclusion(&tx_data);
     
-    // Output the proof
+    // Output the proof using ZisK
     write_transaction_proof(&proof);
     
     println!("✅ ZisK: Proof generation completed!");
 }
 
-/// Read transaction data from ZisK stdin
+/// Read transaction data from ZisK input
 fn read_transaction_data() -> TransactionData {
-    // Read the raw input bytes
-    let transfer_id_bytes = stdin::read::<[u8; 16]>();
-    let block_number_bytes = stdin::read::<[u8; 8]>();
-    let tx_index_bytes = stdin::read::<[u8; 8]>();
-    let from_account_bytes = stdin::read::<[u8; 16]>();
-    let to_account_bytes = stdin::read::<[u8; 16]>();
-    let amount_bytes = stdin::read::<[u8; 16]>();
+    // Read structured input from ZisK
+    let transfer_id: u128 = read_input();
+    let block_number: u64 = read_input();
+    let tx_index: u64 = read_input();
+    let from_account: u128 = read_input();
+    let to_account: u128 = read_input();
+    let amount: u128 = read_input();
     
     TransactionData {
-        transfer_id: u128::from_le_bytes(transfer_id_bytes),
-        block_number: u64::from_le_bytes(block_number_bytes),
-        tx_index: u64::from_le_bytes(tx_index_bytes),
-        from_account: u128::from_le_bytes(from_account_bytes),
-        to_account: u128::from_le_bytes(to_account_bytes),
-        amount: u128::from_le_bytes(amount_bytes),
+        transfer_id,
+        block_number,
+        tx_index,
+        from_account,
+        to_account,
+        amount,
     }
 }
 
@@ -138,11 +136,11 @@ fn compute_inclusion_proof(tx_data: &TransactionData) -> [u8; 32] {
     hash_array
 }
 
-/// Write transaction proof to ZisK stdout
+/// Write transaction proof to ZisK output
 fn write_transaction_proof(proof: &TransactionProof) {
-    // Output the proof components as public values
-    stdout::write(&proof.transfer_id.to_le_bytes());
-    stdout::write(&proof.block_number.to_le_bytes());
-    stdout::write(&proof.inclusion_proof_hash);
-    stdout::write(&[if proof.is_valid { 1u8 } else { 0u8 }]);
+    // Set public outputs using ZisK API
+    set_output(&proof.transfer_id);
+    set_output(&proof.block_number);
+    set_output(&proof.inclusion_proof_hash);
+    set_output(&proof.is_valid);
 }
