@@ -548,7 +548,7 @@ async fn debug_tigerbeetle_contents(limit: usize) -> Result<()> {
 async fn debug_transfers(limit: usize) -> Result<()> {
     info!("🔍 Debugging stored transfers and accounts (limit: {})", limit);
     
-    let mut tb_client = TigerBeetleClient::new()?;
+    let mut client = TigerBeetleClient::new()?;
     
     println!("🔍 Checking what's actually stored in TigerBeetle...");
     
@@ -608,7 +608,7 @@ async fn debug_transfers(limit: usize) -> Result<()> {
     let mut accounts_found = std::collections::HashSet::new();
     
     for &transfer_id in test_ids {
-        match tb_client.lookup_transfers(&[transfer_id]).await {
+        match client.lookup_transfers(&[transfer_id]).await {
             Ok(transfers) if !transfers.is_empty() => {
                 let transfer = &transfers[0];
                 println!("✅ Found transfer: {}", transfer_id);
@@ -648,8 +648,8 @@ async fn debug_transfers(limit: usize) -> Result<()> {
 async fn cmd_prove_transaction(transfer_id: u128) -> Result<()> {
     info!("🎯 Generating ZK proof for transfer_id: {}", transfer_id);
     
-    let mut tb_client = TigerBeetleClient::new()?;
-    let proof = zk::generate_zk_proof(&mut tb_client.client, transfer_id).await?;
+    let mut client = TigerBeetleClient::new()?;
+    let proof = zk::generate_zk_proof(&mut client.client, transfer_id).await?;
     
     // Display enhanced proof summary
     display_data_integrity_proof_result(transfer_id, &proof)?;
@@ -657,7 +657,7 @@ async fn cmd_prove_transaction(transfer_id: u128) -> Result<()> {
     Ok(())
 }
 
-fn display_data_integrity_proof_result(transfer_id: u128, proof: &zk::TransactionProof) -> Result<()> {
+fn display_data_integrity_proof_result(transfer_id: u128, proof: &TransactionProof) -> Result<()> {
     info!("");
     info!("╭─────────────────────────────────────────────────────────────╮");
     info!("│                    🔐 ZK PROOF SUMMARY                      │");
@@ -774,7 +774,7 @@ fn display_data_integrity_proof_result(transfer_id: u128, proof: &zk::Transactio
 async fn cmd_prove_batch(count: usize) -> Result<()> {
     info!("🎯 Generating {} ZK proofs in batch", count);
     
-    let mut tb_client = TigerBeetleClient::new()?;
+    let mut client = TigerBeetleClient::new()?;
     
     // Use the actual transfer IDs from sync logs
     let known_transfer_ids = vec![
@@ -808,7 +808,7 @@ async fn cmd_prove_batch(count: usize) -> Result<()> {
     for (i, &transfer_id) in transfer_ids.iter().enumerate() {
         println!("\n📝 Proof {}/{}: Transfer ID {}", i + 1, transfer_ids.len(), transfer_id);
         
-        match zk::generate_zk_proof(&mut tb_client.client, transfer_id).await {
+        match zk::generate_zk_proof(&mut client.client, transfer_id).await {
             Ok(proof) if proof.is_valid => {
                 successful_proofs += 1;
                 println!("  ✅ Generated valid proof");
@@ -870,7 +870,7 @@ async fn cmd_query_transfer(transfer_id: u128) -> Result<()> {
 }
 
 /// Run performance benchmarks
-async fn cmd_benchmark(num_transactions: usize, include_ethereum: bool, rpc_url: &str) -> Result<()> {
+async fn cmd_benchmark(num_transactions: usize, _include_ethereum: bool, _rpc_url: &str) -> Result<()> {
     info!("📊 Running benchmarks with {} transactions", num_transactions);
     // ... existing benchmark logic ...
     Ok(())
