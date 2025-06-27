@@ -10,6 +10,25 @@ use hex;
 use std::io::Write;
 use sha2::Digest;
 
+/*
+ * ZisK Integration - Correct Workflow Commands:
+ * 
+ * ✅ Valid ZisK Commands:
+ * - cargo-zisk build --release
+ * - cargo-zisk rom-setup -e <elf> -k <key_dir>
+ * - cargo-zisk prove -e <elf> -i <input> -w <witness> -k <key_dir> -o <output> -a -y
+ * - cargo-zisk verify -p <proof> -u <publics>
+ * 
+ * ❌ Non-existent Commands (removed):
+ * - cargo-zisk verify-constraints (doesn't exist in ZisK CLI)
+ * 
+ * Workflow:
+ * 1. Build program with cargo-zisk build
+ * 2. Setup ROM with cargo-zisk rom-setup
+ * 3. Generate proof with cargo-zisk prove
+ * 4. Verify proof with cargo-zisk verify
+ */
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionData {
     pub transfer_id: u128,
@@ -159,7 +178,7 @@ pub fn setup_zisk_project() -> Result<()> {
     let current_dir = std::env::current_dir()?;
     let zisk_dir = current_dir.join("zisk-tx-proof");
     
-    info!("��️  Setting up ZisK project at: {}", zisk_dir.display());
+    info!("️  Setting up ZisK project at: {}", zisk_dir.display());
     
     // Create project directory structure
     fs::create_dir_all(&zisk_dir)?;
@@ -243,7 +262,7 @@ async fn generate_zisk_proof(transfer_data: &TransactionData) -> Result<Transact
     info!("📝 Created input.bin with transfer_id: {}", transfer_data.transfer_id);
     
     // 3. Build the ZisK program using cargo-zisk
-    info!("�� Building ZisK program with cargo-zisk...");
+    info!("🔨 Building ZisK program with cargo-zisk...");
     let build_output = Command::new("cargo-zisk")
         .args(&["build", "--release"])
         .current_dir(&zisk_dir)
@@ -278,31 +297,10 @@ async fn generate_zisk_proof(transfer_data: &TransactionData) -> Result<Transact
         info!("✅ ROM setup completed");
     }
     
-    // 5. Verify constraints before generating proof
-    info!("🔍 Verifying constraints...");
+    // 5. Generate the actual proof (using correct ZisK commands)
+    info!("🔐 Generating cryptographic proof...");
     let witness_lib = format!("{}/.zisk/bin/libzisk_witness.so", std::env::var("HOME").unwrap_or_default());
     
-    let verify_output = Command::new("cargo-zisk")
-        .args(&[
-            "verify-constraints",
-            "-e", &elf_path,
-            "-i", "build/input.bin",
-            "-w", &witness_lib,
-            "-k", &proving_key_dir
-        ])
-        .current_dir(&zisk_dir)
-        .output()?;
-    
-    if !verify_output.status.success() {
-        return Err(anyhow::anyhow!(
-            "Constraint verification failed: {}",
-            String::from_utf8_lossy(&verify_output.stderr)
-        ));
-    }
-    info!("✅ Constraints verified successfully");
-    
-    // 6. Generate the actual proof
-    info!("🔐 Generating cryptographic proof...");
     let proof_output = Command::new("cargo-zisk")
         .args(&[
             "prove",
@@ -326,7 +324,7 @@ async fn generate_zisk_proof(transfer_data: &TransactionData) -> Result<Transact
     
     info!("✅ Cryptographic proof generated successfully");
     
-    // 7. Verify the generated proof
+    // 6. Verify the generated proof
     info!("🔍 Verifying generated proof...");
     let verify_start = Instant::now();
     let proof_file = zisk_dir.join("proof").join("proofs").join("vadcop_final_proof.json");
@@ -350,14 +348,14 @@ async fn generate_zisk_proof(transfer_data: &TransactionData) -> Result<Transact
         error!("❌ Proof verification failed: {}", String::from_utf8_lossy(&verify_proof_output.stderr));
     }
     
-    // 8. Get proof file size
+    // 7. Get proof file size
     let proof_size = if proof_file.exists() {
         fs::metadata(&proof_file)?.len() as usize
     } else {
         0
     };
     
-    // 9. Generate inclusion proof hash
+    // 8. Generate inclusion proof hash
     let mut inclusion_proof_hash = [0u8; 32];
     let mut hasher = sha2::Sha256::new();
     hasher.update(&transfer_data.transfer_id.to_le_bytes());
