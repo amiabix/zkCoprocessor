@@ -1,14 +1,9 @@
+
 [package]
 name = "zisk-tx-proof"
 version = "0.1.0"
 edition = "2021"
+default-run = "zisk-tx-proof"
 
 [dependencies]
-# ZisK OS for input/output
 ziskos = { git = "https://github.com/0xPolygonHermez/zisk.git" }
-
-# Cryptographic dependencies
-sha2 = { version = "0.10", default-features = false }
-
-[features]
-default = []

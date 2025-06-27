@@ -12,7 +12,6 @@ use ethers::{
 mod zk;
 mod benchmark;
 use benchmark::TransactionLookupBenchmark;
-use crate::zk::prover::TransactionProof;
 
 #[derive(Parser)]
 #[command(name = "zkcoprocessor")]
@@ -88,6 +87,9 @@ pub enum Commands {
         #[arg(long)]
         block_number: u64,
     },
+    
+    /// Setup ZisK project for transaction proofs
+    SetupZisk,
 }
 
 /// TigerBeetle client wrapper
@@ -646,132 +648,60 @@ async fn debug_transfers(limit: usize) -> Result<()> {
 
 /// Generate ZK proof for a specific transaction
 async fn cmd_prove_transaction(transfer_id: u128) -> Result<()> {
+    let start_time = std::time::Instant::now();
     info!("🎯 Generating ZK proof for transfer_id: {}", transfer_id);
     
     let mut client = TigerBeetleClient::new()?;
     let proof = zk::generate_zk_proof(&mut client.client, transfer_id).await?;
     
-    // Display enhanced proof summary
-    display_data_integrity_proof_result(transfer_id, &proof)?;
+    let total_time = start_time.elapsed().as_millis() as u64;
     
-    Ok(())
-}
-
-fn display_data_integrity_proof_result(transfer_id: u128, proof: &TransactionProof) -> Result<()> {
+    // Display enhanced proof summary with detailed analysis
+    zk::display_detailed_proof_analysis(&proof)?;
+    
+    // Display additional performance summary
     info!("");
     info!("╭─────────────────────────────────────────────────────────────╮");
-    info!("│                    🔐 ZK PROOF SUMMARY                      │");
+    info!("│                    📊 PERFORMANCE SUMMARY                   │");
     info!("╰─────────────────────────────────────────────────────────────╯");
     info!("");
+    info!("⏱️  Total Command Time: {}ms", total_time);
+    info!("🔐 Proof Generation Time: {}ms", proof.generation_time_ms);
+    info!("💾 Proof Size: {} bytes", proof.proof_size_bytes);
+    info!("🔧 Circuit Constraints: {}", proof.circuit_constraints);
     
-    info!("📋 PROOF TYPE: Data Integrity Verification");
-    info!("   └─ This proves basic data consistency, NOT blockchain inclusion");
-    info!("");
-    
-    info!("🎯 TRANSFER ID: {}", transfer_id);
-    info!("🆔 PROOF ID: cb6f94601240f40cf4ca69356f0b3cba402524f1b972970f78a24b56fdfd0be3");
-    info!("");
-    
-    info!("✅ WHAT WAS PROVEN:");
-    info!("   • Transfer data consistency for ID {}", transfer_id);
-    info!("   • Arithmetic operations are correct");
-    info!("   • Memory operations are valid");
-    info!("   • Input/output data integrity");
-    info!("   • ZisK circuit constraints satisfied");
-    info!("");
-    
-    warn!("❌ WHAT WAS NOT PROVEN:");
-    warn!("   • Transaction inclusion in any Ethereum block");
-    warn!("   • Merkle tree membership proof");
-    warn!("   • Connection to actual blockchain state");
-    warn!("   • Account balance validity");
-    warn!("   • Transaction ordering or finality");
-    info!("");
-    
-    warn!("⚠️  CURRENT LIMITATIONS:");
-    warn!("   • This is a simulated transfer, not real Ethereum data");
-    warn!("   • No cryptographic link to blockchain state");
-    warn!("   • Cannot be used for rollup or bridge verification");
-    warn!("   • Does not prove transaction was mined or confirmed");
-    info!("");
-    
-    info!("🔒 VERIFICATION: ✅ Proof is cryptographically valid");
-    info!("📦 PROOF SIZE: ~2048 bytes");
-    info!("");
-    
-    // Display detailed ZK proof breakdown if it's a ZisK proof
-    if proof.proof_type == "zisk" {
-        info!("🔍 ZK Proof Breakdown:");
-        info!("=======================");
-        info!("The following 9 public outputs prove transaction inclusion:");
-        info!("");
-        
-        // Reconstruct the public outputs from the proof data
-        let transfer_id_bytes = proof.transfer_id.to_le_bytes();
-        let block_number_bytes = proof.block_number.to_le_bytes();
-        
-        // Transfer ID (4 u32 values)
-        for i in 0..4 {
-            let mut bytes = [0u8; 4];
-            bytes.copy_from_slice(&transfer_id_bytes[i*4..(i+1)*4]);
-            let value = u32::from_le_bytes(bytes);
-            info!("public {}: 0x{:08x}  ← transfer_id part {} (bytes {}-{})", 
-                    i, value, i+1, i*4, (i+1)*4-1);
-        }
-        
-        // Block Number (2 u32 values)
-        for i in 0..2 {
-            let mut bytes = [0u8; 4];
-            bytes.copy_from_slice(&block_number_bytes[i*4..(i+1)*4]);
-            let value = u32::from_le_bytes(bytes);
-            info!("public {}: 0x{:08x}  ← block_number part {} (bytes {}-{})", 
-                    4+i, value, i+1, i*4, (i+1)*4-1);
-        }
-        
-        // Inclusion Proof Hash (first 8 bytes as 2 u32 values)
-        for i in 0..2 {
-            let mut bytes = [0u8; 4];
-            bytes.copy_from_slice(&proof.inclusion_proof_hash[i*4..(i+1)*4]);
-            let value = u32::from_le_bytes(bytes);
-            info!("public {}: 0x{:08x}  ← proof_hash part {} (bytes {}-{})", 
-                    6+i, value, i+1, i*4, (i+1)*4-1);
-        }
-        
-        // Validity flag
-        info!("public {}: 0x{:08x}  ← validity flag (1=valid, 0=invalid)", 
-                8, if proof.is_valid { 1 } else { 0 });
-        
-        info!("");
-        info!("📋 Proof Summary:");
-        info!("==================");
-        info!("✅ Transaction {} exists", proof.transfer_id);
-        info!("✅ Transaction was included in block {}", proof.block_number);
-        info!("✅ Cryptographic proof hash: {}", hex::encode(&proof.inclusion_proof_hash[0..8]));
-        info!("✅ All validation checks passed");
-        info!("✅ Zero-knowledge proof generated (not simulated)");
-        
-        info!("");
-        info!("🔍 Reconstructed Values:");
-        info!("=======================");
-        info!("Transfer ID: {} (from public 0-3)", proof.transfer_id);
-        info!("Block Number: {} (from public 4-5)", proof.block_number);
-        info!("Proof Hash: {} (from public 6-7)", hex::encode(&proof.inclusion_proof_hash[0..8]));
-        info!("Valid: {} (from public 8)", if proof.is_valid { "YES" } else { "NO" });
+    if let Some(verification_time) = proof.verification_time_ms {
+        info!("✅ Verification Time: {}ms", verification_time);
     }
     
+    // Calculate efficiency metrics
+    let efficiency = if total_time > 0 {
+        (proof.generation_time_ms as f64 / total_time as f64) * 100.0
+    } else {
+        0.0
+    };
+    info!("📈 Generation Efficiency: {:.1}%", efficiency);
+    
+    // Calculate throughput
+    let throughput = if total_time > 0 {
+        1000.0 / total_time as f64
+    } else {
+        0.0
+    };
+    info!("🚀 Throughput: {:.2} proofs/second", throughput);
+    
     info!("");
-    info!("╭─────────────────────────────────────────────────────────────╮");
-    info!("│  This proof verifies data integrity but NOT blockchain      │");
-    info!("│  inclusion. For real transaction inclusion proofs, we need  │");
-    info!("│  to implement Merkle tree verification with real Ethereum   │");
-    info!("│  block data.                                                │");
-    info!("╰─────────────────────────────────────────────────────────────╯");
+    info!("💡 Next Steps:");
+    info!("   • Use this proof for data integrity verification");
+    info!("   • For blockchain inclusion, implement Merkle tree proofs");
+    info!("   • Consider batch generation for multiple transactions");
     
     Ok(())
 }
 
 /// Generate proofs for multiple transactions
 async fn cmd_prove_batch(count: usize) -> Result<()> {
+    let batch_start = std::time::Instant::now();
     info!("🎯 Generating {} ZK proofs in batch", count);
     
     let mut client = TigerBeetleClient::new()?;
@@ -800,29 +730,81 @@ async fn cmd_prove_batch(count: usize) -> Result<()> {
     
     let transfer_ids = &known_transfer_ids[0..count.min(known_transfer_ids.len())];
     
-    println!("\n🔐 Batch ZK Proof Generation:");
-    println!("================================");
+    info!("╭─────────────────────────────────────────────────────────────╮");
+    info!("│              🔄 BATCH PROOF GENERATION                     │");
+    info!("│        Generating {} Data Integrity Proofs                │", count);
+    info!("╰─────────────────────────────────────────────────────────────╯");
+    info!("");
     
+    warn!("📢 IMPORTANT: These are DATA INTEGRITY proofs, not transaction inclusion proofs!");
+    warn!("   They verify data consistency but do NOT prove blockchain inclusion.");
+    info!("");
+    
+    let mut total_generation_time = 0u64;
     let mut successful_proofs = 0;
+    let mut failed_proofs = 0;
+    let mut total_proof_size = 0usize;
+    let mut total_constraints = 0u32;
     
     for (i, &transfer_id) in transfer_ids.iter().enumerate() {
-        println!("\n📝 Proof {}/{}: Transfer ID {}", i + 1, transfer_ids.len(), transfer_id);
+        let proof_start = std::time::Instant::now();
+        info!("🔄 Generating proof {}/{}: Transfer ID {}", i + 1, transfer_ids.len(), transfer_id);
         
         match zk::generate_zk_proof(&mut client.client, transfer_id).await {
             Ok(proof) if proof.is_valid => {
+                let proof_time = proof_start.elapsed().as_millis() as u64;
+                total_generation_time += proof.generation_time_ms;
+                total_proof_size += proof.proof_size_bytes;
+                total_constraints += proof.circuit_constraints;
                 successful_proofs += 1;
-                println!("  ✅ Generated valid proof");
+                
+                info!("✅ Proof {} completed in {}ms", i + 1, proof_time);
+                info!("   📊 Size: {} bytes, Constraints: {}", proof.proof_size_bytes, proof.circuit_constraints);
+                info!("   ─────────────────────────────────────────────────");
             }
             Ok(_) => {
-                println!("  ❌ Invalid proof generated");
+                failed_proofs += 1;
+                error!("❌ Proof {} generated invalid proof", i + 1);
             }
             Err(e) => {
-                println!("  🚨 Failed: {}", e);
+                failed_proofs += 1;
+                error!("🚨 Proof {} failed: {}", i + 1, e);
             }
         }
     }
     
-    println!("\n📊 Results: {}/{} successful proofs", successful_proofs, transfer_ids.len());
+    let batch_time = batch_start.elapsed().as_millis() as u64;
+    
+    info!("");
+    info!("🎉 BATCH GENERATION COMPLETE!");
+    info!("================================");
+    info!("📊 SUMMARY:");
+    info!("   • Total proofs requested: {}", count);
+    info!("   • Successful proofs: {}", successful_proofs);
+    info!("   • Failed proofs: {}", failed_proofs);
+    info!("   • Success rate: {:.1}%", (successful_proofs as f64 / count as f64) * 100.0);
+    info!("");
+    info!("⏱️  PERFORMANCE:");
+    info!("   • Total batch time: {}ms", batch_time);
+    info!("   • Average proof time: {}ms", if successful_proofs > 0 { total_generation_time / successful_proofs } else { 0 });
+    info!("   • Throughput: {:.2} proofs/second", (successful_proofs as f64 / batch_time as f64) * 1000.0);
+    info!("   • Total proof size: {} bytes", total_proof_size);
+    info!("   • Average proof size: {} bytes", if successful_proofs > 0 { total_proof_size / successful_proofs as usize } else { 0 });
+    info!("   • Total constraints: {}", total_constraints);
+    info!("   • Average constraints: {}", if successful_proofs > 0 { total_constraints / successful_proofs as u32 } else { 0 });
+    info!("");
+    info!("💡 RECOMMENDATIONS:");
+    info!("   • Use these proofs for data integrity verification");
+    info!("   • For blockchain inclusion, implement Merkle tree proofs");
+    info!("   • Consider parallel processing for larger batches");
+    info!("   • Monitor memory usage for very large batches");
+    info!("");
+    info!("🔮 FUTURE ENHANCEMENTS:");
+    info!("   • Real transaction inclusion proofs");
+    info!("   • Merkle tree verification");
+    info!("   • Parallel proof generation");
+    info!("   • Proof compression and optimization");
+    
     Ok(())
 }
 
@@ -850,8 +832,9 @@ async fn cmd_sync_blocks(rpc_url: &str, from: u64, to: u64) -> Result<()> {
 
 /// Debug: Show stored transfers
 async fn cmd_debug(limit: usize) -> Result<()> {
-    info!("🔍 Showing {} stored transfers...", limit);
-    // ... existing debug logic ...
+    info!("🔍 Showing stored transfers (simulated data)...");
+    warn!("Note: These are simulated transfers, not real Ethereum transactions");
+    debug_tigerbeetle_contents(limit).await?;
     Ok(())
 }
 
@@ -870,9 +853,9 @@ async fn cmd_query_transfer(transfer_id: u128) -> Result<()> {
 }
 
 /// Run performance benchmarks
-async fn cmd_benchmark(num_transactions: usize, _include_ethereum: bool, _rpc_url: &str) -> Result<()> {
-    info!("📊 Running benchmarks with {} transactions", num_transactions);
-    // ... existing benchmark logic ...
+async fn cmd_benchmark(num_transactions: usize, include_ethereum: bool, rpc_url: &str) -> Result<()> {
+    info!("📊 Running performance benchmarks...");
+    run_benchmarks(num_transactions, include_ethereum, rpc_url).await?;
     Ok(())
 }
 
@@ -923,30 +906,34 @@ async fn main() -> Result<()> {
         
         Commands::TestTiger => {
             info!("🐅 Testing TigerBeetle connection...");
-            cmd_test_tiger().await?;
+            test_tigerbeetle().await?;
         },
         
         Commands::TestEth { rpc_url } => {
             info!("🔗 Testing Ethereum RPC connection...");
-            cmd_test_eth(rpc_url).await?;
+            test_ethereum(rpc_url).await?;
         },
         
         Commands::SyncBlocks { rpc_url, from, to } => {
             info!("🔄 Syncing Ethereum blocks to TigerBeetle...");
-            cmd_sync_blocks(rpc_url, *from, *to).await?;
+            sync_ethereum_blocks(rpc_url, *from, *to).await?;
         },
         
         Commands::Debug { limit } => {
             info!("🔍 Showing stored transfers (simulated data)...");
             warn!("Note: These are simulated transfers, not real Ethereum transactions");
-            cmd_debug(*limit).await?;
+            debug_tigerbeetle_contents(*limit).await?;
         },
         
         Commands::Query { account_id, transfer_id } => {
             if let Some(id) = account_id {
-                cmd_query_account(*id).await?;
+                info!("🔍 Querying account: {}", id);
+                // TODO: Implement actual account query
+                info!("📊 Account query functionality not yet implemented");
             } else if let Some(id) = transfer_id {
-                cmd_query_transfer(*id).await?;
+                info!("🔍 Querying transfer: {}", id);
+                // TODO: Implement actual transfer query
+                info!("📊 Transfer query functionality not yet implemented");
             } else {
                 info!("Please specify --account-id or --transfer-id");
             }
@@ -955,6 +942,11 @@ async fn main() -> Result<()> {
         Commands::Benchmark { num_transactions, include_ethereum, rpc_url } => {
             info!("📊 Running performance benchmarks...");
             cmd_benchmark(*num_transactions, *include_ethereum, rpc_url).await?;
+        },
+        
+        Commands::SetupZisk => {
+            info!("🏗️  Setting up ZisK project for transaction proofs...");
+            zk::cmd_setup_zisk().await?;
         },
     }
     
