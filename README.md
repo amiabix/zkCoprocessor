@@ -1,148 +1,117 @@
 # zkCoprocessor
 
-A simple Rust demo that syncs Ethereum blockchain data to TigerBeetle. This project shows how to fetch Ethereum blocks via RPC and store transactions as TigerBeetle transfers for fast lookups.
+A Rust application that syncs Ethereum blockchain data to TigerBeetle and generates zero-knowledge proofs for transaction verification.
 
-## What It Does
+## 🎯 What This Project Does
 
-- Fetches Ethereum blocks and transactions via JSON-RPC
-- Stores transactions with value > 0 as TigerBeetle transfers
-- Provides basic CLI commands for testing and debugging
-- Includes simple performance benchmarks
-- **Generates real zero-knowledge proofs using ZisK**
+- **Syncs Ethereum blocks** to TigerBeetle database for fast lookups
+- **Generates real ZK proofs** using ZisK for transaction data integrity
+- **Provides CLI tools** for testing, debugging, and proof generation
+- **Supports both real and simulated proof modes** based on platform
 
-## Prerequisites
+## 📋 Prerequisites Check
 
-- Rust (latest stable)
-- TigerBeetle server
-- Ethereum RPC endpoint
-- **ZisK (for real ZK proofs on Linux)**
+Before starting, ensure you have these installed:
 
-## Quick Start
+### Required (All Platforms)
+- **Rust** (latest stable): `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+- **TigerBeetle**: Download from [TigerBeetle releases](https://github.com/tigerbeetle/tigerbeetle/releases)
+- **Ethereum RPC access**: Free endpoints available (see configuration)
 
-1. **Build the project**:
-   ```bash
-   cargo build --release
-   ```
+### Optional (Linux Only)
+- **ZisK**: For real cryptographic proofs (macOS uses simulation mode)
 
-2. **Set up TigerBeetle**:
-   ```bash
-   # Format database
-   tigerbeetle format --cluster=0 --replica=0 --replica-count=1 0_0.tigerbeetle
-   
-   # Start server
-   tigerbeetle start --addresses=3000 0_0.tigerbeetle
-   ```
+## 🚀 Quick Start Guide
 
-3. **Test it**:
-   ```bash
-   # Test connections
-   cargo run -- test-tiger
-   cargo run -- test-eth
-   
-   # Sync a block
-   cargo run -- sync-blocks --from 19000000 --to 19000000
-   
-   # Check what was stored
-   cargo run -- debug --limit 5
-   
-   # Generate ZK proofs
-   cargo run -- prove-transaction --transfer-id 19000000000000
-   cargo run -- prove-batch --count 3
-   ```
-
-## AWS Deployment Guide
-
-### 1. Launch EC2 Instance
+### Step 1: Build the Project
 ```bash
-# Recommended: Ubuntu 22.04 LTS
-# Instance type: t3.medium or larger
-# Storage: 20GB+ for TigerBeetle database
-```
-
-### 2. Connect and Update System
-```bash
-ssh -i your-key.pem ubuntu@your-instance-ip
-sudo apt update && sudo apt upgrade -y
-```
-
-### 3. Install Dependencies
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source ~/.cargo/env
-
-# Install build tools
-sudo apt install -y build-essential pkg-config libssl-dev
-
-# Install TigerBeetle
-curl -L https://github.com/tigerbeetle/tigerbeetle/releases/latest/download/tigerbeetle_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/')_0.16.45.tar.gz | tar -xz
-sudo mv tigerbeetle /usr/local/bin/
-
-# Install ZisK (for real ZK proofs)
-curl -L https://github.com/delendum-xyz/zisk/releases/latest/download/zisk-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/') -o zisk
-chmod +x zisk
-sudo mv zisk /usr/local/bin/
-```
-
-### 4. Clone and Build Project
-```bash
+# Clone the repository
 git clone https://github.com/amiabix/zkCoprocessor.git
 cd zkCoprocessor
+
+# Build the project
 cargo build --release
 ```
 
-### 5. Set Up TigerBeetle Database
+### Step 2: Start TigerBeetle Database
 ```bash
-# Format database
+# Create and format the database
 tigerbeetle format --cluster=0 --replica=0 --replica-count=1 0_0.tigerbeetle
 
-# Start TigerBeetle server (in background)
-nohup tigerbeetle start --addresses=3000 0_0.tigerbeetle > tigerbeetle.log 2>&1 &
+# Start TigerBeetle server (keep this running in a separate terminal)
+tigerbeetle start --addresses=3000 0_0.tigerbeetle
 ```
 
-### 6. Test the Setup
+### Step 3: Test Your Setup
 ```bash
 # Test TigerBeetle connection
-./target/release/zkcoprocessor test-tiger
+cargo run -- test-tiger
 
-# Test Ethereum RPC
-./target/release/zkcoprocessor test-eth
+# Test Ethereum RPC connection
+cargo run -- test-eth
 
-# Sync some blocks
-./target/release/zkcoprocessor sync-blocks --from 19000000 --to 19000000
-
-# Generate real ZK proof
-./target/release/zkcoprocessor prove-transaction --transfer-id 19000000000000
+# If both tests pass, you're ready to proceed!
 ```
 
-### 7. Production Setup (Optional)
+### Step 4: Sync Ethereum Data
 ```bash
-# Create systemd service for TigerBeetle
-sudo tee /etc/systemd/system/tigerbeetle.service > /dev/null <<EOF
-[Unit]
-Description=TigerBeetle Database Server
-After=network.target
+# Sync a single block (recommended for testing)
+cargo run -- sync-blocks --from 19000000 --to 19000000
 
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu
-ExecStart=/usr/local/bin/tigerbeetle start --addresses=3000 0_0.tigerbeetle
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable and start service
-sudo systemctl enable tigerbeetle
-sudo systemctl start tigerbeetle
+# Sync multiple blocks (be patient, this takes time)
+cargo run -- sync-blocks --from 19000000 --to 19000001
 ```
 
-## Commands
+### Step 5: Verify Data and Generate Proofs
+```bash
+# Check what data was synced
+cargo run -- debug --limit 10
 
-### Connection Tests
+# Generate a ZK proof for a transaction
+cargo run -- prove-transaction --transfer-id 19000000000000
+
+# Generate multiple proofs in batch
+cargo run -- prove-batch --count 3
+```
+
+## 🔧 Detailed Installation Guide
+
+### Installing TigerBeetle
+
+**macOS:**
+```bash
+# Download and install TigerBeetle
+curl -L https://github.com/tigerbeetle/tigerbeetle/releases/latest/download/tigerbeetle_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/')_0.16.45.tar.gz | tar -xz
+sudo mv tigerbeetle /usr/local/bin/
+```
+
+**Linux:**
+```bash
+# Download and install TigerBeetle
+curl -L https://github.com/tigerbeetle/tigerbeetle/releases/latest/download/tigerbeetle_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/')_0.16.45.tar.gz | tar -xz
+sudo mv tigerbeetle /usr/local/bin/
+```
+
+### Installing ZisK (Linux Only)
+
+**For real ZK proofs on Linux:**
+```bash
+# Run the setup script
+chmod +x scripts/setup-zisk.sh
+./scripts/setup-zisk.sh
+
+# Or install manually
+git clone https://github.com/0xPolygonHermez/zisk.git
+cd zisk/cli
+cargo build --release
+cargo install --path .
+```
+
+**Note:** macOS users will automatically use simulation mode - no ZisK installation needed.
+
+## 📖 Available Commands
+
+### Connection Testing
 ```bash
 # Test TigerBeetle connection
 cargo run -- test-tiger
@@ -151,20 +120,22 @@ cargo run -- test-tiger
 cargo run -- test-eth [--rpc-url <URL>]
 ```
 
-### Data Sync
+### Data Synchronization
 ```bash
 # Sync Ethereum blocks to TigerBeetle
 cargo run -- sync-blocks --from <BLOCK> --to <BLOCK> [--rpc-url <URL>]
+
+# Example: Sync block 19000000
+cargo run -- sync-blocks --from 19000000 --to 19000000
 ```
 
-### Debug & Query
+### Data Inspection
 ```bash
-# View stored data
+# View stored data in TigerBeetle
 cargo run -- debug [--limit <N>]
 
-# Query specific items
-cargo run -- query --account-id <ID>
-cargo run -- query --transfer-id <ID>
+# Example: Show first 5 items
+cargo run -- debug --limit 5
 ```
 
 ### ZK Proof Generation
@@ -172,112 +143,188 @@ cargo run -- query --transfer-id <ID>
 # Generate ZK proof for a single transaction
 cargo run -- prove-transaction --transfer-id <ID>
 
-# Generate ZK proofs for multiple transactions
+# Example: Generate proof for transfer 19000000000000
+cargo run -- prove-transaction --transfer-id 19000000000000
+
+# Generate multiple proofs in batch
 cargo run -- prove-batch --count <N>
+
+# Example: Generate 3 proofs
+cargo run -- prove-batch --count 3
 ```
 
-### Benchmarks
+### Setup and Maintenance
 ```bash
-# Run performance tests
-cargo run -- benchmark [--num-transactions <N>] [--include-ethereum]
+# Setup ZisK project structure (Linux only)
+cargo run -- setup-zisk
+
+# Run performance benchmarks
+cargo run -- benchmark [--num-transactions <N>]
 ```
 
-## ZK Proof System
+## 🔍 Understanding the Output
 
-### Current Status
-- **Real ZK Mode**: Now generates real zero-knowledge proofs using ZisK on Linux
-- **Platform Support**: Full ZisK support on Linux, simulation mode on macOS
-- **Proof Types**: Real cryptographic proofs with actual transaction data
-
-### Proof Features
-- **Real Transaction Data**: Uses actual TigerBeetle transaction data
-- **Cryptographic Verification**: Generates verifiable zero-knowledge proofs
-- **Detailed Breakdown**: Shows exactly what each public output represents
-- **Batch Processing**: Generate multiple proofs efficiently
-
-### Proof Output Format
-The system generates 9 public outputs that prove transaction inclusion:
-- `public 0-3`: Parts of the real transfer_id (e.g., `19000000000000`)
-- `public 4-5`: Parts of the real block_number (e.g., `19000000`)
-- `public 6-7`: Real cryptographic proof hash
-- `public 8`: Validity flag (1=valid, 0=invalid)
-
-### Example Proof Output
+### Sync Output
+When you run `sync-blocks`, you'll see:
 ```
-🔍 ZK Proof Breakdown:
-=======================
-public 0: 0xc8403000  ← transfer_id part 1 (bytes 0-3)
-public 1: 0x00001147  ← transfer_id part 2 (bytes 4-7)
-public 2: 0x00000000  ← transfer_id part 3 (bytes 8-11)
-public 3: 0x00000000  ← transfer_id part 4 (bytes 12-15)
-public 4: 0x0121eac0  ← block_number part 1 (bytes 0-3)
-public 5: 0x00000000  ← block_number part 2 (bytes 4-7)
-public 6: 0x82edac32  ← proof_hash part 1 (bytes 0-3)
-public 7: 0x915bde57  ← proof_hash part 2 (bytes 4-7)
-public 8: 0x00000001  ← validity flag (1=valid, 0=invalid)
+🔄 Syncing Ethereum blocks 19000000 to 19000000
+📦 Fetching block 19000000
+📦 Found 127 transactions in block 19000000
+✅ Block 19000000: 127 transactions processed
+🎉 Sync complete! 45 value transfers stored in TigerBeetle
 ```
 
-## How It Works
-
-1. **Ethereum RPC**: Fetches blocks and transactions from Ethereum
-2. **Filtering**: Only processes transactions with value > 0
-3. **TigerBeetle Storage**: Creates accounts and transfers in TigerBeetle
-4. **ID Mapping**: Converts Ethereum addresses to u128 IDs for TigerBeetle
-5. **ZK Proofs**: Generates real cryptographic proofs using ZisK
-
-## Project Structure
-
+### Debug Output
+When you run `debug`, you'll see:
 ```
-src/
-├── main.rs          # Main CLI and sync logic
-├── benchmark.rs     # Performance benchmarking
-└── zk/             # ZK proof system
-    ├── mod.rs      # Module exports
-    └── prover.rs   # ZK proof logic
-zisk-tx-proof/      # ZisK program for transaction proofs
-    ├── Cargo.toml
-    └── src/main.rs
+📊 TigerBeetle Contents:
+========================
+💸 Transfer 19000000000000: 1001 -> 1002 (1000000000000000000 wei, block 19000000)
+💸 Transfer 19000000000002: 1003 -> 1004 (500000000000000000 wei, block 19000000)
+...
 ```
 
-## Configuration
+### ZK Proof Output
+When you run `prove-transaction`, you'll see:
+```
+🎯 Generating ZK proof for transfer_id: 19000000000000
+🚀 Generating real ZisK proof using cargo-zisk...
+✅ ZisK program built successfully
+✅ Cryptographic proof generated successfully
+✅ Proof verification successful
 
-- **TigerBeetle**: `127.0.0.1:3000` (default)
-- **Ethereum RPC**: `https://eth.llamarpc.com` (default)
-- **ZisK**: Automatically detected and used on supported platforms
+╭─────────────────────────────────────────────────────────────╮
+│                🔍 ZK PROOF ANALYSIS                         │
+╰─────────────────────────────────────────────────────────────╯
 
-## Troubleshooting
+📋 PROOF DETAILS:
+🎯 Transfer ID: 19000000000000
+📦 Block Number: 19000000
+🔐 Proof Type: zisk
+✅ Valid: YES
+⏱️  Generation Time: 2341ms
+💾 Proof Size: 2048 bytes
+📁 Proof File: /path/to/proof/vadcop_final_proof.json
+```
+
+## ⚙️ Configuration
+
+### Default Settings
+- **TigerBeetle**: `127.0.0.1:3000`
+- **Ethereum RPC**: `https://eth.llamarpc.com`
+- **Database file**: `0_0.tigerbeetle`
+
+### Custom RPC Endpoints
+You can use different Ethereum RPC endpoints:
+```bash
+# Use Infura
+cargo run -- test-eth --rpc-url https://mainnet.infura.io/v3/YOUR_PROJECT_ID
+
+# Use Alchemy
+cargo run -- test-eth --rpc-url https://eth-mainnet.alchemyapi.io/v2/YOUR_API_KEY
+
+# Use your own node
+cargo run -- test-eth --rpc-url http://localhost:8545
+```
+
+## 🐛 Troubleshooting
 
 ### Common Issues
-- **No transfers found**: Run sync first, then debug
-- **Connection errors**: Check if TigerBeetle is running
-- **RPC errors**: Try a different Ethereum RPC endpoint
-- **ZK proof errors**: Ensure ZisK is installed on Linux
 
-### AWS-Specific Issues
-- **Permission denied**: Check security groups allow port 3000
-- **Out of memory**: Use larger instance type for large datasets
-- **Disk space**: Monitor TigerBeetle database size
-- **Network timeouts**: Use closer RPC endpoints
+**"TigerBeetle connection failed"**
+```bash
+# Check if TigerBeetle is running
+ps aux | grep tigerbeetle
 
-### ZK Proof Issues
-- **Dummy data**: Run from main directory, not zisk-tx-proof subdirectory
-- **ZisK not found**: Install ZisK binary in PATH
-- **Build errors**: Ensure all dependencies are installed
+# Restart TigerBeetle
+tigerbeetle start --addresses=3000 0_0.tigerbeetle
+```
 
-## Development Notes
+**"No transfers found in debug"**
+```bash
+# You need to sync data first
+cargo run -- sync-blocks --from 19000000 --to 19000000
+cargo run -- debug --limit 5
+```
 
-### ZisK Integration
-- **Linux**: Full real ZK proof support
-- **macOS**: Simulation mode (ZisK doesn't support macOS yet)
-- **Automatic Detection**: System detects platform and uses appropriate mode
-- **Real Data**: Always uses actual TigerBeetle transaction data
+**"Ethereum RPC connection failed"**
+```bash
+# Try a different RPC endpoint
+cargo run -- test-eth --rpc-url https://eth.llamarpc.com
+```
 
-### Performance Tips
-- Use `--release` builds for production
-- Monitor TigerBeetle memory usage
-- Use efficient RPC endpoints
-- Consider batch operations for large datasets
+**"ZisK not found" (Linux)**
+```bash
+# Install ZisK
+./scripts/setup-zisk.sh
+
+# Or the system will automatically use simulation mode
+```
+
+### Platform-Specific Issues
+
+**macOS Users:**
+- ZisK doesn't support macOS yet
+- The system automatically uses simulation mode
+- All proof generation will work, but with simulated cryptographic guarantees
+- This is perfect for development and testing
+
+**Linux Users:**
+- Full ZisK support available
+- Install ZisK for real cryptographic proofs
+- If ZisK fails, the system falls back to simulation mode
+
+## 📊 Performance Tips
+
+### For Large Datasets
+```bash
+# Use release builds for better performance
+cargo build --release
+
+# Sync blocks in smaller batches
+cargo run -- sync-blocks --from 19000000 --to 19000005
+
+# Monitor TigerBeetle memory usage
+# TigerBeetle uses memory-mapped files, so ensure sufficient RAM
+```
+
+### For Proof Generation
+```bash
+# Generate proofs in batches for efficiency
+cargo run -- prove-batch --count 10
+
+# Use specific transfer IDs for targeted proofs
+cargo run -- prove-transaction --transfer-id 19000000000000
+```
+
+## 🔮 What's Next?
+
+### Current Capabilities
+- ✅ Real Ethereum block synchronization
+- ✅ TigerBeetle data storage and querying
+- ✅ ZK proof generation (real on Linux, simulated on macOS)
+- ✅ Batch proof processing
+- ✅ Performance benchmarking
+
+### Future Enhancements
+- 🔄 Real transaction inclusion proofs (Merkle tree verification)
+- 🔄 Parallel proof generation
+- 🔄 Proof compression and optimization
+- 🔄 Web interface for proof verification
+- 🔄 Integration with other blockchains
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is open source. See the LICENSE file for details.
 
 ---
 
-A production-ready demo of Ethereum → TigerBeetle integration with real zero-knowledge proofs 🚀 
+**Ready to get started?** Follow the Quick Start Guide above! 🚀 
