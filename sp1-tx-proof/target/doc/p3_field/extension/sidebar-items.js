@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BinomialExtensionField"],"trait":["BinomiallyExtendable","ComplexExtendable","HasComplexBinomialExtension","HasFrobenius","HasTwoAdicBionmialExtension","HasTwoAdicComplexBinomialExtension"],"type":["Complex"]};

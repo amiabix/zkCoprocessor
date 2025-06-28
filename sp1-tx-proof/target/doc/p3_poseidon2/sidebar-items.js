@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["matmul_internal","poseidon2_round_numbers_128"],"struct":["HLMDSMat4","MDSMat4","Poseidon2","Poseidon2ExternalMatrixGeneral","Poseidon2ExternalMatrixHL"],"trait":["DiffusionPermutation","MdsLightPermutation"]};

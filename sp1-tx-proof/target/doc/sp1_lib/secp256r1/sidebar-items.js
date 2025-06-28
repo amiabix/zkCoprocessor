@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["N"],"struct":["Secp256r1Point"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BitReversalPerm"],"trait":["BitReversableMatrix"],"type":["BitReversedMatrixView"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["bitrev","dense","extension","mul","row_index_mapped","sparse","stack","strided","util"],"struct":["Dimensions"],"trait":["Matrix"]};

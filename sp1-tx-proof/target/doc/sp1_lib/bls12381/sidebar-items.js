@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["N"],"fn":["decompress_pubkey"],"struct":["Bls12381Point"]};

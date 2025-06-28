@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MONTY_INVERSE","POSEIDON2_INTERNAL_MATRIX_DIAG_16_BABYBEAR_MONTY","POSEIDON2_INTERNAL_MATRIX_DIAG_24_BABYBEAR_MONTY"],"struct":["BabyBear","DiffusionMatrixBabyBear","MdsMatrixBabyBear","PackedBabyBearNeon"]};

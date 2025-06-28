@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["elliptic_curve",[["impl&lt;C&gt; <a class=\"trait\" href=\"zeroize/trait.ZeroizeOnDrop.html\" title=\"trait zeroize::ZeroizeOnDrop\">ZeroizeOnDrop</a> for <a class=\"struct\" href=\"elliptic_curve/ecdh/struct.EphemeralSecret.html\" title=\"struct elliptic_curve::ecdh::EphemeralSecret\">EphemeralSecret</a>&lt;C&gt;<div class=\"where\">where\n    C: <a class=\"trait\" href=\"elliptic_curve/trait.CurveArithmetic.html\" title=\"trait elliptic_curve::CurveArithmetic\">CurveArithmetic</a>,</div>"],["impl&lt;C&gt; <a class=\"trait\" href=\"zeroize/trait.ZeroizeOnDrop.html\" title=\"trait zeroize::ZeroizeOnDrop\">ZeroizeOnDrop</a> for <a class=\"struct\" href=\"elliptic_curve/struct.SecretKey.html\" title=\"struct elliptic_curve::SecretKey\">SecretKey</a>&lt;C&gt;<div class=\"where\">where\n    C: <a class=\"trait\" href=\"elliptic_curve/trait.Curve.html\" title=\"trait elliptic_curve::Curve\">Curve</a>,</div>"],["impl&lt;C: <a class=\"trait\" href=\"elliptic_curve/trait.Curve.html\" title=\"trait elliptic_curve::Curve\">Curve</a>&gt; <a class=\"trait\" href=\"zeroize/trait.ZeroizeOnDrop.html\" title=\"trait zeroize::ZeroizeOnDrop\">ZeroizeOnDrop</a> for <a class=\"struct\" href=\"elliptic_curve/ecdh/struct.SharedSecret.html\" title=\"struct elliptic_curve::ecdh::SharedSecret\">SharedSecret</a>&lt;C&gt;"]]],["zeroize",[]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1322,15]}

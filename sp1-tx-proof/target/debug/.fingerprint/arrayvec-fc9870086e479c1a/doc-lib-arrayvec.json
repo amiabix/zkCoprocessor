@@ -1,0 +1,1 @@
+{"rustc":2639730858202328753,"features":"[]","declared_features":"[\"borsh\", \"default\", \"serde\", \"std\", \"zeroize\"]","target":12564975964323158710,"profile":11723298867167628662,"path":10760670586042718846,"deps":[],"local":[{"Precalculated":"0.7.6"}],"rustflags":[],"config":2069994364910194474,"compile_kind":0}

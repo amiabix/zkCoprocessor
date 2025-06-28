@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["bit_reversed_zero_pad","divide_by_height"],"struct":["NaiveDft","Radix2Bowers","Radix2Dit","Radix2DitParallel"],"trait":["TwoAdicSubgroupDft"]};

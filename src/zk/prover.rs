@@ -18,15 +18,6 @@ use sha2::Digest;
  * - cargo-zisk rom-setup -e <elf> -k <key_dir>
  * - cargo-zisk prove -e <elf> -i <input> -w <witness> -k <key_dir> -o <output> -a -y
  * - cargo-zisk verify -p <proof> -u <publics>
- * 
- * ❌ Non-existent Commands (removed):
- * - cargo-zisk verify-constraints (doesn't exist in ZisK CLI)
- * 
- * Workflow:
- * 1. Build program with cargo-zisk build
- * 2. Setup ROM with cargo-zisk rom-setup
- * 3. Generate proof with cargo-zisk prove
- * 4. Verify proof with cargo-zisk verify
  */
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,24 +46,13 @@ pub struct TransactionProof {
     pub verification_time_ms: Option<u64>,
 }
 
-/// Check if ZisK is properly installed using cargo-zisk
-fn is_zisk_available() -> bool {
-    match Command::new("cargo-zisk").arg("--help").output() {
-        Ok(output) => {
-            if output.status.success() {
-                info!("✅ cargo-zisk is available");
-                true
-            } else {
-                info!("❌ cargo-zisk command failed");
-                false
-            }
-        }
-        Err(_) => {
-            info!("❌ cargo-zisk not found in PATH");
-            info!("💡 Install ZisK: Follow instructions at https://github.com/0xPolygonHermez/zisk");
-            false
-        }
-    }
+/// Check if ZisK CLI is available on the system
+pub fn is_zisk_available() -> bool {
+    std::process::Command::new("cargo-zisk")
+        .arg("--version")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
 }
 
 /// Create the correct ZisK circuit code using the real ziskos API

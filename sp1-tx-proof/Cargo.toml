@@ -1,0 +1,13 @@
+[package]
+name = "sp1-tx-proof"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "sp1-tx-proof"
+path = "src/main.rs"
+
+[dependencies]
+sp1-lib = "4.0.0"
+serde = { version = "1.0", features = ["derive"] }
+bincode = "1.3"
